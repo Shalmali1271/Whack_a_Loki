@@ -1,9 +1,8 @@
 import pygame
 import random
 from pygame import *
-
-
-class GameManager:
+import threading, time, sys
+class GameManager():
     def __init__(self):
         # Define constants
         self.SCREEN_WIDTH = 800
@@ -18,23 +17,24 @@ class GameManager:
         self.GAME_TITLE = "Whack A Loki"
         # Initialize player's score, number of missed hits and level
         self.score = 0
-        self.misses = 0
+        self.missed = 0
         self.level = 1
         # Initialize screen
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption(self.GAME_TITLE)
         self.background = pygame.image.load("bg4.jpg")
+        
         # Font object for displaying text
         self.font_obj = pygame.font.Font('./fonts/GROBOLD.ttf', self.FONT_SIZE)
         # Initialize the loki's sprite sheet
         # 6 different states
         sprite_sheet = pygame.image.load("loki_sprites.png")
         self.loki = []
-        self.loki.append(sprite_sheet.subsurface(13, 0, 62, 102))
-        self.loki.append(sprite_sheet.subsurface(68, 0, 62, 102))
-        self.loki.append(sprite_sheet.subsurface(135, 0, 62, 102))
-        self.loki.append(sprite_sheet.subsurface(195, 0, 62, 102))
-        self.loki.append(sprite_sheet.subsurface(262, 0, 62, 102))
+        self.loki.append(sprite_sheet.subsurface(13, 0, 60, 102))
+        self.loki.append(sprite_sheet.subsurface(68, 0, 60, 102))
+        self.loki.append(sprite_sheet.subsurface(135, 0, 60, 102))
+        self.loki.append(sprite_sheet.subsurface(195, 0, 60, 102))
+        self.loki.append(sprite_sheet.subsurface(262, 0, 60, 102))
         #self.loki.append(sprite_sheet.subsurface(853, 0, 116, 81))
         # Positions of the tesseract in background
         self.tes_positions = []
@@ -52,7 +52,6 @@ class GameManager:
         self.debugger = Debugger("debug")
         # Sound effects
         self.soundEffect = SoundEffect()
-
     # Calculate the player level according to his current score & the LEVEL_SCORE_GAP constant
     def get_player_level(self):
         newLevel = 1 + int(self.score / self.LEVEL_SCORE_GAP)
@@ -81,7 +80,7 @@ class GameManager:
         else:
             return False
 
-    # Update the game states, re-calculate the player's score, misses, level
+    # Update the game states, re-calculate the player's score, missed, level
     def update(self):
         # Update the player's score
         current_score_string = "SCORE: " + str(self.score)
@@ -89,21 +88,22 @@ class GameManager:
         score_text_pos = score_text.get_rect()
         score_text_pos.centerx = self.background.get_rect().centerx
         score_text_pos.centery = self.FONT_TOP_MARGIN
-        self.screen.blit(score_text, score_text_pos)
-        # Update the player's misses
-        current_misses_string = "MISSES: " + str(self.misses)
-        misses_text = self.font_obj.render(current_misses_string, True, (255, 255, 255))
-        misses_text_pos = misses_text.get_rect()
-        misses_text_pos.centerx = self.SCREEN_WIDTH / 5 * 4
-        misses_text_pos.centery = self.FONT_TOP_MARGIN
-        self.screen.blit(misses_text, misses_text_pos)
+        screen.blit(score_text, score_text_pos)
+        # Update the player's missed
+        current_missed_string = "MISSED: " + str(self.missed)
+        missed_text = self.font_obj.render(current_missed_string, True, (255, 255, 255))
+        missed_text_pos = missed_text.get_rect()
+        missed_text_pos.centerx = self.SCREEN_WIDTH / 5 * 4
+        missed_text_pos.centery = self.FONT_TOP_MARGIN
+        screen.blit(missed_text, missed_text_pos)
         # Update the player's level
         current_level_string = "LEVEL: " + str(self.level)
         level_text = self.font_obj.render(current_level_string, True, (255, 255, 255))
         level_text_pos = level_text.get_rect()
         level_text_pos.centerx = self.SCREEN_WIDTH / 5 * 1
         level_text_pos.centery = self.FONT_TOP_MARGIN
-        self.screen.blit(level_text, level_text_pos)
+        screen.blit(level_text, level_text_pos)
+
 
     # Start the game's main loop
     # Contains some logic for handling animations, loki hit events, etc..
@@ -118,7 +118,6 @@ class GameManager:
         left = 0
         # Time control variables
         clock = pygame.time.Clock()
-
         for i in range(len(self.loki)):
             self.loki[i].set_colorkey((0, 0, 0))
             self.loki[i] = self.loki[i].convert_alpha()
@@ -127,6 +126,7 @@ class GameManager:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     loop = False
+                    
                 if event.type == MOUSEBUTTONDOWN and event.button == self.LEFT_MOUSE_BUTTON:
                     self.soundEffect.playFire()
                     if self.is_loki_hit(mouse.get_pos(), self.tes_positions[frame_num]) and num > 0 and left == 0:
@@ -142,17 +142,17 @@ class GameManager:
                         self.soundEffect.playHurt()
                         self.update()
                     else:
-                        self.misses += 1
+                        self.missed += 1
                         self.update()
-
+            # self.hammer()
             if num > 4:
-                self.screen.blit(self.background, (0, 0))
+                screen.blit(self.background, (0, 0))
                 self.update()
                 num = -1
                 left = 0
 
             if num == -1:
-                self.screen.blit(self.background, (0, 0))
+                screen.blit(self.background, (0, 0))
                 self.update()
                 num = 0
                 is_down = False
@@ -164,9 +164,10 @@ class GameManager:
             cycle_time += sec
             if cycle_time > interval:
                 pic = self.loki[num]
-                self.screen.blit(self.background, (0, 0))
-                self.screen.blit(pic, (self.tes_positions[frame_num][0] - left, self.tes_positions[frame_num][1]))
+                screen.blit(self.background, (0, 0))
+                screen.blit(pic, (self.tes_positions[frame_num][0] - left, self.tes_positions[frame_num][1]))
                 self.update()
+                
                 if is_down is False:
                     num += 1
                 else:
@@ -177,13 +178,36 @@ class GameManager:
                     num -= 1
                     is_down = True
                     self.soundEffect.playPop()
-                    interval = self.get_interval_by_level(initial_interval)  # get the newly decreased interval value
+                    interval = self.get_interval_by_level(initial_interval) 
+                    # get the newly decreased interval value
                 else:
                     interval = 0.1
                 cycle_time = 0
+            self.hammer()
             # Update the display
             pygame.display.flip()
 
+    #hammer as cursor
+    def hammer(self):
+        loop1=True
+        clock = pygame.time.Clock()
+        #clock.tick(120)
+        # while loop1:
+        #     for event in pygame.event.get():
+        #         if event.type == pygame.QUIT:
+        #             loop1 = False        
+        pygame.mouse.set_visible( False )
+        click=pygame.mouse.get_pressed()
+        hammer_x, hammer_y = pygame.mouse.get_pos()
+        if click[0] == 1 :
+            thisHammer=pygame.image.load('clickedhammer.png').convert_alpha()
+            self.screen.blit(thisHammer, (hammer_x, hammer_y))
+        else:
+            thisHammer=pygame.image.load('hammer.png').convert_alpha()
+            self.screen.blit(thisHammer, (hammer_x, hammer_y))
+            # hammer_x -= thisHammer.get_width() / 5
+            # hammer_y -= thisHammer.get_height() / 4
+            # pygame.display.flip()    
 
 # The Debugger class - use this class for printing out debugging information
 class Debugger:
@@ -229,11 +253,9 @@ class SoundEffect:
     def stopLevelUp(self):
         self.levelSound.stop()
 
-###############################################################
 # Initialize the game
 pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
 pygame.init()
-
 def text_objects(text, font):
     textSurface = font.render(text, True, (255,255,255))
     return textSurface, textSurface.get_rect()
@@ -247,6 +269,7 @@ background_image = pygame.image.load("thorandloki.jpg").convert()
 screen.fill(background_colour)
 screen.blit(background_image, [0, 0]) 
 running=True
+
 while running: 
     for event in pygame.event.get():              
         if event.type == pygame.QUIT:
@@ -264,8 +287,8 @@ while running:
     screen.blit(textSurf, textRect)
     if click1[0] ==1:
         # Run the main loop
-        my_game = GameManager()
-        my_game.start()  
+        my_game = GameManager() 
+        my_game.start()
         running=False   
     else :
         pass
