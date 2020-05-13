@@ -1,7 +1,8 @@
-import pygame
 import random
+import pygame
 from pygame import *
-import threading, time, sys
+import time
+
 class GameManager():
     def __init__(self):
         # Define constants
@@ -15,6 +16,8 @@ class GameManager():
         self.LEVEL_SCORE_GAP = 4
         self.LEFT_MOUSE_BUTTON = 1
         self.GAME_TITLE = "Whack A Loki"
+        self.cycle_time = 0
+        self.clicked=False
         # Initialize player's score, number of missed hits and level
         self.score = 0
         self.missed = 0
@@ -23,7 +26,6 @@ class GameManager():
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption(self.GAME_TITLE)
         self.background = pygame.image.load("bg4.jpg")
-        
         # Font object for displaying text
         self.font_obj = pygame.font.Font('./fonts/GROBOLD.ttf', self.FONT_SIZE)
         # Initialize the loki's sprite sheet
@@ -104,11 +106,10 @@ class GameManager():
         level_text_pos.centery = self.FONT_TOP_MARGIN
         screen.blit(level_text, level_text_pos)
 
-
     # Start the game's main loop
     # Contains some logic for handling animations, loki hit events, etc..
+
     def start(self):
-        cycle_time = 0
         num = -1
         loop = True
         is_down = False
@@ -121,14 +122,13 @@ class GameManager():
         for i in range(len(self.loki)):
             self.loki[i].set_colorkey((0, 0, 0))
             self.loki[i] = self.loki[i].convert_alpha()
-
         while loop:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     loop = False
-                    
                 if event.type == MOUSEBUTTONDOWN and event.button == self.LEFT_MOUSE_BUTTON:
                     self.soundEffect.playFire()
+                    self.clicked=True
                     if self.is_loki_hit(mouse.get_pos(), self.tes_positions[frame_num]) and num > 0 and left == 0:
                         num = 4
                         left = 20
@@ -144,13 +144,11 @@ class GameManager():
                     else:
                         self.missed += 1
                         self.update()
-            # self.hammer()
             if num > 4:
                 screen.blit(self.background, (0, 0))
-                self.update()
+                self.update()                    
                 num = -1
                 left = 0
-
             if num == -1:
                 screen.blit(self.background, (0, 0))
                 self.update()
@@ -158,16 +156,14 @@ class GameManager():
                 is_down = False
                 interval = 0.5
                 frame_num = random.randint(0, 6)
-
             mil = clock.tick(self.FPS)
             sec = mil / 1000.0
-            cycle_time += sec
-            if cycle_time > interval:
+            self.cycle_time += sec
+            if self.cycle_time > interval:
                 pic = self.loki[num]
                 screen.blit(self.background, (0, 0))
                 screen.blit(pic, (self.tes_positions[frame_num][0] - left, self.tes_positions[frame_num][1]))
                 self.update()
-                
                 if is_down is False:
                     num += 1
                 else:
@@ -182,32 +178,11 @@ class GameManager():
                     # get the newly decreased interval value
                 else:
                     interval = 0.1
-                cycle_time = 0
-            self.hammer()
+                self.cycle_time = 0
             # Update the display
             pygame.display.flip()
 
-    #hammer as cursor
-    def hammer(self):
-        loop1=True
-        clock = pygame.time.Clock()
-        #clock.tick(120)
-        # while loop1:
-        #     for event in pygame.event.get():
-        #         if event.type == pygame.QUIT:
-        #             loop1 = False        
-        pygame.mouse.set_visible( False )
-        click=pygame.mouse.get_pressed()
-        hammer_x, hammer_y = pygame.mouse.get_pos()
-        if click[0] == 1 :
-            thisHammer=pygame.image.load('clickedhammer.png').convert_alpha()
-            self.screen.blit(thisHammer, (hammer_x, hammer_y))
-        else:
-            thisHammer=pygame.image.load('hammer.png').convert_alpha()
-            self.screen.blit(thisHammer, (hammer_x, hammer_y))
-            # hammer_x -= thisHammer.get_width() / 5
-            # hammer_y -= thisHammer.get_height() / 4
-            # pygame.display.flip()    
+
 
 # The Debugger class - use this class for printing out debugging information
 class Debugger:
@@ -217,6 +192,7 @@ class Debugger:
     def log(self, message):
         if self.mode is "debug":
             print("> DEBUG: " + str(message))
+
 
 
 class SoundEffect:
@@ -287,11 +263,9 @@ while running:
     screen.blit(textSurf, textRect)
     if click1[0] ==1:
         # Run the main loop
-        my_game = GameManager() 
-        my_game.start()
-        running=False   
-    else :
-        pass
-    pygame.display.flip() 
+        t1 = GameManager()
+        t1.start()
+        break
+    pygame.display.flip()
 # Exit the game if the main loop ends
 pygame.quit()
