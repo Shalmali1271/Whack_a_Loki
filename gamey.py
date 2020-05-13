@@ -152,14 +152,14 @@ class GameManager():
             scale = 3
 
         if scale == 1:
-            string1 = "LOKI WINS"
+            string1 = "LOKI WON"
             text1 = self.font_obj.render(string1, True, (255, 255, 255))
             text_pos1 = text1.get_rect()
             text_pos1.centerx = self.background.get_rect().centerx
             text_pos1.centery = 300
             screen.blit(text1, text_pos1)
         elif scale == 2:
-            string2 = "THOR WINS"
+            string2 = "YOU WON"
             text2 = self.font_obj.render(string2, True, (255, 255, 255))
             text_pos2 = text2.get_rect()
             text_pos2.centerx = self.background.get_rect().centerx
@@ -314,6 +314,8 @@ def text_objects(text, font):
 (width, height) = (800, 600)
 screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption('WHACK A LOKI')
+gameIcon = pygame.image.load('icon.png')
+pygame.display.set_icon(gameIcon)
 background_colour = (255,255,255)
 #def window1() :
 background_image = pygame.image.load("thorandloki.jpg").convert()
