@@ -13,6 +13,7 @@ class GameManager():
         self.LOKI_HEIGHT = 90
         self.FONT_SIZE = 31
         self.FONT_TOP_MARGIN = 26
+        self.FONT_BOTTOM_MARGIN = 574
         self.LEVEL_SCORE_GAP = 4
         self.LEFT_MOUSE_BUTTON = 1
         self.GAME_TITLE = "Whack A Loki"
@@ -22,6 +23,8 @@ class GameManager():
         self.score = 0
         self.missed = 0
         self.level = 1
+        self.time_to_over=0
+        self.time_to_over_in_seconds = 0
         # Initialize screen
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         pygame.display.set_caption(self.GAME_TITLE)
@@ -105,6 +108,73 @@ class GameManager():
         level_text_pos.centerx = self.SCREEN_WIDTH / 5 * 1
         level_text_pos.centery = self.FONT_TOP_MARGIN
         screen.blit(level_text, level_text_pos)
+        #Update time remaining to gameover.
+        current_time="Time: "+str(self.time_to_over_in_seconds)
+        time_text = self.font_obj.render(current_time, True, (255, 255, 255))
+        time_text_pos = time_text.get_rect()
+        time_text_pos.centerx = self.SCREEN_WIDTH / 5 * 4
+        time_text_pos.centery = self.FONT_BOTTOM_MARGIN
+        screen.blit(time_text, time_text_pos)
+
+    def gameover_screen(self) :
+        scale = 0
+        s = self.screen    # the size of your rect
+        s.set_alpha(300)                # alpha level
+        s.fill((50,50,50))           # this fills the entire surface
+        #display the score in last window 
+        current_score_string = "LOKI GOT HIT " + str(self.score) + " TIMES"
+        score_text = self.font_obj.render(current_score_string, True, (255, 255, 255))
+        score_text_pos = score_text.get_rect()
+        score_text_pos.centerx = self.background.get_rect().centerx
+        score_text_pos.centery = 100
+        screen.blit(score_text, score_text_pos)
+        # Update the player's missed
+        current_missed_string = "LOKI ESCAPED " + str(self.missed) + " TIMES"
+        missed_text = self.font_obj.render(current_missed_string, True, (255, 255, 255))
+        missed_text_pos = missed_text.get_rect()
+        missed_text_pos.centerx = self.background.get_rect().centerx
+        missed_text_pos.centery = 200
+        screen.blit(missed_text, missed_text_pos)
+
+        # if player wants to play again
+        string4 = "TO PLAY AGAIN CLICK PLAY!"
+        text4 = self.font_obj.render(string4, True, (255, 255, 255))
+        text_pos4 = text4.get_rect()
+        text_pos4.centerx = self.background.get_rect().centerx
+        text_pos4.centery = 400
+        screen.blit(text4, text_pos4)
+
+        if self.missed > self.score:
+            scale = 1
+        elif self.missed < self.score:
+            scale = 2
+        elif self.missed == self.score:
+            scale = 3
+
+        if scale == 1:
+            string1 = "LOKI WINS"
+            text1 = self.font_obj.render(string1, True, (255, 255, 255))
+            text_pos1 = text1.get_rect()
+            text_pos1.centerx = self.background.get_rect().centerx
+            text_pos1.centery = 300
+            screen.blit(text1, text_pos1)
+        elif scale == 2:
+            string2 = "THOR WINS"
+            text2 = self.font_obj.render(string2, True, (255, 255, 255))
+            text_pos2 = text2.get_rect()
+            text_pos2.centerx = self.background.get_rect().centerx
+            text_pos2.centery = 300
+            screen.blit(text2, text_pos2)
+        elif scale == 3:
+            string3 = "DRAW"
+            text3 = self.font_obj.render(string3, True, (255, 255, 255))
+            text_pos3 = text3.get_rect()
+            text_pos3.centerx = self.background.get_rect().centerx
+            text_pos3.centery = 300
+            screen.blit(text3, text_pos3)
+
+        self.screen.blit(s, (0,0))    # (0,0) are the top-left coordinates 
+        pygame.display.update()
 
     # Start the game's main loop
     # Contains some logic for handling animations, loki hit events, etc..
@@ -119,16 +189,21 @@ class GameManager():
         left = 0
         # Time control variables
         clock = pygame.time.Clock()
+        start_ticks=pygame.time.get_ticks() 
         for i in range(len(self.loki)):
             self.loki[i].set_colorkey((0, 0, 0))
             self.loki[i] = self.loki[i].convert_alpha()
         while loop:
+            self.time_to_over=(pygame.time.get_ticks()-start_ticks)/1000   #calculate how many seconds
+            self.time_to_over_in_seconds= int(self.time_to_over)
+            self.update()
+            if self.time_to_over > 30: # if more than 30 seconds close the game
+                loop=False
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    loop = False
+                    pygame.quit()
                 if event.type == MOUSEBUTTONDOWN and event.button == self.LEFT_MOUSE_BUTTON:
                     self.soundEffect.playFire()
-                    self.clicked=True
                     if self.is_loki_hit(mouse.get_pos(), self.tes_positions[frame_num]) and num > 0 and left == 0:
                         num = 4
                         left = 20
@@ -181,7 +256,7 @@ class GameManager():
                 self.cycle_time = 0
             # Update the display
             pygame.display.flip()
-
+        self.gameover_screen()
 
 
 # The Debugger class - use this class for printing out debugging information
@@ -245,7 +320,6 @@ background_image = pygame.image.load("thorandloki.jpg").convert()
 screen.fill(background_colour)
 screen.blit(background_image, [0, 0]) 
 running=True
-
 while running: 
     for event in pygame.event.get():              
         if event.type == pygame.QUIT:
@@ -253,19 +327,18 @@ while running:
     mouse1 = pygame.mouse.get_pos()
     click1 = pygame.mouse.get_pressed()
     #play Button
-    if 350+100 > mouse1[0] > 350 and 350+50 > mouse1[1] > 350:
-        pygame.draw.rect(screen, (0,45,0),(350,350,100,50))
+    if 350+100 > mouse1[0] > 350 and 450+50 > mouse1[1] > 450:
+        pygame.draw.rect(screen, (0,45,0),(350,450,100,50))
     else:
-        pygame.draw.rect(screen, (0,80,0),(350,350,100,50))
+        pygame.draw.rect(screen, (0,80,0),(350,450,100,50))
     smallText = pygame.font.SysFont("freesansbold.ttf",35,bold=False,italic=True)            
     textSurf, textRect = text_objects("PLAY!", smallText)
-    textRect.center = ( (350+(100/2)), (350+(50/2)) )
+    textRect.center = ( (350+(100/2)), (450+(50/2)) )
     screen.blit(textSurf, textRect)
-    if click1[0] ==1:
+    if click1[0] ==1 and (350+100 > mouse1[0] > 350 and 450+50 > mouse1[1] > 450):
         # Run the main loop
         t1 = GameManager()
         t1.start()
-        break
     pygame.display.flip()
 # Exit the game if the main loop ends
 pygame.quit()
